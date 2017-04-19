@@ -5,8 +5,10 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
 import com.grishberg.annotationprocessor.processor.CustomAnnotation;
+import com.grishberg.annotationprocessor.processor.SubscribeTest;
 
 @CustomAnnotation
+@SubscribeTest
 public class MainActivity extends AppCompatActivity {
 
     @CustomAnnotation
@@ -19,6 +21,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showAnnotationMessage() {
+        //GeneratedClassSubscribe
         GeneratedClass generatedClass = new GeneratedClass();
         String message = generatedClass.getMessage();
         // android.support.v7.app.AlertDialog
@@ -27,5 +30,10 @@ public class MainActivity extends AppCompatActivity {
                 .setTitle("Annotation Processor Messages")
                 .setMessage(message)
                 .show();
+    }
+
+    @SubscribeTest
+    public void onSomeState(SomeState state){
+
     }
 }

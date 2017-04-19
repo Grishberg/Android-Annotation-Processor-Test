@@ -1,1 +1,2 @@
 com.grishberg.annotationprocessor.processor.CustomAnnotationProcessor
+com.grishberg.annotationprocessor.processor.SubscribeTestAnnotatonProcessor
