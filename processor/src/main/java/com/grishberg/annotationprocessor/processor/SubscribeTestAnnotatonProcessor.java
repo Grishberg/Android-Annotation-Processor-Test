@@ -2,6 +2,8 @@ package com.grishberg.annotationprocessor.processor;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -9,8 +11,12 @@ import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
+import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.ExecutableType;
+import javax.lang.model.type.TypeMirror;
 import javax.tools.JavaFileObject;
 
 /**
@@ -23,34 +29,69 @@ public class SubscribeTestAnnotatonProcessor extends AbstractProcessor {
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         String originalPackageName = "";
-        for (Element element : roundEnv.getElementsAnnotatedWith(SubscribeTest.class)) {
-            originalPackageName = element.getEnclosingElement().toString();
-            break;
+        String parentClassName = "";
+        final ArrayList<ArgsHolder> args = new ArrayList<>();
+        for (Element annotatedElement : roundEnv.getElementsAnnotatedWith(SubscribeTest.class)) {
+            String methodName = annotatedElement.getSimpleName().toString();
+
+            ExecutableType executableType = (ExecutableType)annotatedElement.asType();
+            List<? extends TypeMirror> parameters = executableType.getParameterTypes();
+            TypeMirror param1 = parameters.get(0);
+            DeclaredType declaredType = (DeclaredType)param1;
+            List<? extends AnnotationMirror> anns = ((TypeElement)declaredType.asElement()).getAnnotationMirrors( );
+
+            args.add(new ArgsHolder(methodName, declaredType.toString()));
+
+            if (parentClassName == null || parentClassName.isEmpty()) {
+                Element patentClass = annotatedElement.getEnclosingElement();
+                parentClassName = patentClass.getSimpleName().toString();
+                originalPackageName = patentClass.getEnclosingElement().toString();
+            }
         }
         roundEnv.getElementsAnnotatedWith(SubscribeTest.class).toArray();
+        String className = "GeneratedClass" + parentClassName + "Subscriber";
         StringBuilder builder = new StringBuilder()
                 .append("package ")
                 .append(originalPackageName)
                 .append(";\n\n")
-                .append("public class GeneratedClassSubscriber {\n\n") // open class
-                .append("\tpublic String getMessage() {\n") // open method
-                .append("\t\treturn \"");
+                .append("public class ")
+                .append(className)
+                .append(" {\n\n")
+                .append("\tprivate final ")
+                .append(parentClassName)
+                .append(" view;\n")
+                .append("\tpublic ")
+                .append(className)
+                .append("(final ")
+                .append(parentClassName)
+                .append(" view){\n")
+                .append("\t\tthis.view = view;\n")
+                .append("\t}\n\n")
+                .append("\tpublic void processState(MvpState state) {\n");// open method; // open class
 
-        // for each javax.lang.model.element.Element annotated with the CustomAnnotation
-        for (Element element : roundEnv.getElementsAnnotatedWith(SubscribeTest.class)) {
-            String objectType = element.getSimpleName().toString();
-
-            // this is appending to the return statement
-            builder.append(objectType).append(" says hello!\\n");
+        boolean isFirstArg = true;
+        for (ArgsHolder arg : args) {
+            builder.append("\t\t");
+            if (!isFirstArg) {
+                builder.append(" else ");
+            }
+            builder.append("if(state instanceof ")
+                    .append(arg.argType)
+                    .append(") {\n")
+                    .append("\t\t\tview.")
+                    .append(arg.methodName)
+                    .append("((")
+                    .append(arg.argType)
+                    .append(") state);\n\t\t}");
+            isFirstArg = false;
         }
 
-        builder.append("\";\n") // end return
-                .append("\t}\n") // close method
+        builder.append("\n\t}\n") // close method
                 .append("}\n"); // close class
 
         try { // write the file
             JavaFileObject source = processingEnv.getFiler()
-                    .createSourceFile(originalPackageName + ".GeneratedClassSubscriber");
+                    .createSourceFile(originalPackageName + "." + className);
 
             Writer writer = source.openWriter();
             writer.write(builder.toString());
@@ -64,4 +105,13 @@ public class SubscribeTestAnnotatonProcessor extends AbstractProcessor {
         return true;
     }
 
+    static class ArgsHolder {
+        final String methodName;
+        final String argType;
+
+        public ArgsHolder(String methodName, String argType) {
+            this.methodName = methodName;
+            this.argType = argType;
+        }
+    }
 }

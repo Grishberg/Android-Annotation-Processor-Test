@@ -8,7 +8,6 @@ import com.grishberg.annotationprocessor.processor.CustomAnnotation;
 import com.grishberg.annotationprocessor.processor.SubscribeTest;
 
 @CustomAnnotation
-@SubscribeTest
 public class MainActivity extends AppCompatActivity {
 
     @CustomAnnotation
@@ -34,6 +33,11 @@ public class MainActivity extends AppCompatActivity {
 
     @SubscribeTest
     public void onSomeState(SomeState state){
+
+    }
+
+    @SubscribeTest
+    public void onOtherState(OtherState state){
 
     }
 }
